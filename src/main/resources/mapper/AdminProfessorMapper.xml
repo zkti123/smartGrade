@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.green.smartGrade.admin.professor.AdminProfessorMapper">
+    <insert id="insProfessor" useGeneratedKeys="true" keyProperty="iprofessor">
+        insert ignore professor
+        (imajor,professor_password,nm,gender,birthdate,phone)
+        values
+        (#{imajor},#{professorPassword},#{nm},#{gender},#{birthdate},#{phone})
+    </insert>
+
+    <select id="findProfessors">
+        SELECT iprofessor,B.major_name majorName
+        ,nm,gender,birthdate,phone,email
+        ,address,A.del_yn delYn,date(A.created_at) createdAt
+        FROM professor A
+        INNER JOIN major B
+        ON A.imajor=B.imajor
+        <where>
+            <if test="name!=null">
+              and  A.nm in (#{name})
+            </if>
+
+            <if test="imajor >0 ">
+             and B.imajor =#{imajor}
+            </if>
+        </where>
+
+        ORDER BY A.imajor
+        LIMIT #{staIdx},10
+    </select>
+<!--    <select id="findProfessorDetail">-->
+<!--        SELECT A.lecture_str_date lectureStrDate, A.lecture_end_date lectureEndDate-->
+<!--        , A.lecture_str_time lectureStrTime,-->
+<!--        A.lecture_end_time lectureEndTime, B.lecture_name lectureName-->
+<!--        , C.nm name, C.gender gender, C.birthdate birthDate,-->
+<!--        C.phone phone , C.address address, C.email email-->
+<!--        , D.major_name majorName, C.created_at createdAt,C.del_yn delYn-->
+<!--        FROM lecture_applly A-->
+<!--        INNER JOIN lecture_name B-->
+<!--        ON A.ilecture_name = B.ilecture_name-->
+<!--        INNER JOIN professor C-->
+<!--        ON A.iprofessor = C.iprofessor-->
+<!--        INNER JOIN major D-->
+<!--        ON C.imajor = D.imajor-->
+<!--        WHERE C.iprofessor = #{iprofessor}-->
+<!--        AND A.isemester = (SELECT MaX(isemester) from semester )-->
+
+<!--    </select>-->
+
+    <select id="countProfessor" >
+        select count(*)
+        from professor
+        <where>
+            <if test="name!=null">
+                and  nm in (#{name})
+            </if>
+
+            <if test="imajor >0 ">
+                and imajor =#{imajor}
+            </if>
+        </where>
+    </select>
+
+    <select id="professorProfile">
+        SELECT A.iprofessor,A.nm name, A.gender gender,A.pic, A.birthdate birthDate
+        , A.phone phone, A.address address, A.email email
+        , B.imajor, A.created_at createdAt,A.del_yn delYn
+        from professor A
+        INNER JOIN major B
+        ON A.imajor = B.imajor
+        WHERE A.iprofessor = #{iprofessor}
+
+    </select>
+    <select id="professorMajor">
+        SELECT A.ilecture,A.lecture_str_date lectureStrDate, A.lecture_end_date lectureEndDate
+        , date_format(A.lecture_str_time,'%H:%i') lectureStrTime,
+        date_format(A.lecture_end_time,'%H:%i') lectureEndTime, B.lecture_name lectureName
+        from lecture_applly A
+        INNER JOIN lecture_name B
+        ON A.ilecture_name = B.ilecture_name
+        WHERE A.iprofessor = #{iprofessor}
+    </select>
+
+
+</mapper>

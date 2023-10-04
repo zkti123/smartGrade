@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.green.smartGrade.admin.AdminMapper">
+
+    <insert id="semesterIns" keyProperty="isemester" useGeneratedKeys="true">
+        insert into semester
+        set year = #{year}
+        ,semester = #{semester}
+        ,semester_str_date =#{semesterStrDate}
+        ,semester_end_date =#{semesterEndDate}
+    </insert>
+    
+    <insert id="insLectureName" useGeneratedKeys="true" keyProperty="ilectureName">
+        insert into lecture_name
+        set lecture_name=#{lectureName}
+        ,score= #{score}
+    </insert>
+
+    <select id="findLectureName">
+        select ilecture_name ilectureName,lecture_name lectureName,score,del_yn delYn
+        from lecture_name
+        <where>
+            <if test="lectureName != null">
+                and lecture_name like CONCAT('%', #{lectureName}, '%')
+            </if>
+        </where>
+    </select>
+    <select id="getSemester">
+        SELECT isemester,year,semester,semester_str_date semesterStrDate,semester_end_date semesterEndDate
+        FROM semester
+        <where>
+            <if test="year != null">
+                and year =#{year}
+            </if>
+        </where>
+    </select>
+
+    <select id="selLecture">
+        SELECT A.ilecture,D.lecture_name lectureNm,F.semester,G.major_name majorName,C.nm,B.lecture_room_name
+            lectureRoomNm,B.building_name buildingNm,A.grade_limit gradeLimit,D.score,lecture_str_date strDate
+            ,lecture_end_date endDate,date_format(lecture_str_time ,'%H:%i')strTime
+            ,date_format(lecture_end_time,'%H:%i' )endTime
+            ,lecture_max_people maxPeople,opening_procedures procedures,A.del_yn delYn,COUNT(E.ilecture) currentPeople
+        from lecture_applly A
+            INNER JOIN lecture_room B
+            ON A.ilecture_room=B.ilecture_room
+            INNER JOIN professor C
+            ON A.iprofessor=C.iprofessor
+            INNER JOIN lecture_name D
+            ON A.ilecture_name=D.ilecture_name
+            LEFT JOIN lecture_student E
+            ON E.ilecture=A.ilecture
+            inner JOIN semester F
+            ON F.isemester= A.isemester
+            INNER JOIN major G
+            ON G.imajor= C.imajor
+
+        <where>
+            <if test="procedures==-2">
+                and A.opening_procedures BETWEEN 0 AND 2
+            </if>
+            <if test="procedures>=0">
+                and A.opening_procedures=#{procedures}
+            </if>
+
+            <if test="nm!=null">
+                and C.nm like CONCAT('%', #{nm}, '%')
+            </if>
+            <if test="ilectureName != 0">
+                and D.ilecture_name = #{ilectureName}
+            </if>
+
+        </where>
+        GROUP BY A.ilecture
+        limit #{strIdx},#{row}
+    </select>
+    <!--졸업 요건을 충족한 학생들 리스트 -->
+    <select id="graduationStudent">
+        SELECT A.istudent,sum(case when B.finished_at IS NULL then 0 ELSE G.score END) score,C.graduation_score
+        graduationScore
+        FROM student A
+        left JOIN lecture_student B
+        ON A.istudent=B.istudent
+        inner JOIN major C
+        ON A.imajor=C.imajor
+        left JOIN lecture_applly D
+        ON D.ilecture=B.ilecture
+        left JOIN lecture_name G
+        ON G.ilecture_name=D.ilecture_name
+        WHERE A.finished_yn=1
+        GROUP BY A.istudent
+        HAVING score>= C.graduation_score
+
+    </select>
+    <update id="updGraduationStudent">
+        <foreach collection="list" item="item" open="" close="">
+            update student
+            set finished_yn=2
+            where istudent =#{item.istudent};
+        </foreach>
+    </update>
+    <select id="findLectureCondition">
+        select opening_procedures
+        from lecture_applly
+        where ilecture = #{ilecture}
+    </select>
+
+    <select id="lectureCondition">
+        select ilecture,return_ctnt returnCtnt,date(return_date) returnDate
+        from leture_condition
+        where ilecture= #{ilecture}
+    </select>
+
+    <select id="lectureInStudent">
+        SELECT C.istudent,C.nm,D.major_name majorNm,A.attendance,A.midterm_examination minEx,A.final_examination
+        finEx,A.total_score totalScore
+        FROM lecture_student A
+        INNER JOIN lecture_applly B
+        ON B.ilecture=A.ilecture
+        INNER JOIN student C
+        ON C.istudent=A.istudent
+        INNER JOIN major D
+        ON D.imajor= C.imajor
+        WHERE A.ilecture=#{ilecture}
+
+    </select>
+
+
+    <select id="countLceture">
+        select count(*)
+        from lecture_applly A
+        inner join professor B
+        on A.iprofessor=B.iprofessor
+        <where>
+            <if test="procedures>=0">
+                and A.opening_procedures=#{procedures}
+            </if>
+            <if test="procedures==-2">
+                and A.opening_procedures BETWEEN 0 AND 2
+            </if>
+
+
+            <if test="nm!=null">
+                and B.nm in (#{nm})
+            </if>
+
+        </where>
+    </select>
+    <insert id="lectureModify">
+        insert into leture_condition
+        set ilecture=#{ilecture}
+        ,return_ctnt=#{ctnt}
+    </insert>
+
+
+    <update id="updLecture">
+        update lecture_applly
+        set opening_procedures = #{procedures}
+        where ilecture=#{ilecture}
+    </update>
+</mapper>

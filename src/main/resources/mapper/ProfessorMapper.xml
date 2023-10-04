@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.green.smartGrade.professor.ProfessorMapper">
+
+    <insert id="insProfessor" useGeneratedKeys="true" keyProperty="iprofessor">
+        insert into professor
+        (imajor,professor_password,nm,gender,birthdate,phone,email,address)
+        values
+        (#{imajor},#{password},#{name},#{gender},#{birthdate},#{phone},#{email},#{address})
+    </insert>
+
+
+    <select id="selProfessor">
+        select A.iprofessor,A.imajor,B.major_name majorName,A.nm name,A.gender,A.pic,A.birthdate,A.phone,A.email,A.address
+        ,A.del_yn delYn
+        ,A.created_at createdAt,A.secret_key secretKey
+        from professor A
+        inner join major B
+        on A.imajor = B.imajor
+        WHERE A.iprofessor = #{iprofessor}
+    </select>
+
+    <select id="professorMajor">
+        SELECT A.ilecture,A.lecture_str_date lectureStrDate, A.lecture_end_date lectureEndDate
+        , date_format(A.lecture_str_time,'%H:%i') lectureStrTime,
+        date_format(A.lecture_end_time,'%H:%i') lectureEndTime, B.lecture_name lectureName
+        from lecture_applly A
+        INNER JOIN lecture_name B
+        ON A.ilecture_name = B.ilecture_name
+        WHERE A.iprofessor = #{iprofessor}
+    </select>
+
+
+
+
+    <select id="ProfessorCount">
+        SELECT COUNT(*)
+        FROM professor
+        WHERE iprofessor = #{iprofessor}
+    </select>
+
+
+    <update id="upProfessor">
+        update professor
+        <set>
+        <if test="pic!= null">
+             phone = #{phone}
+            , email = #{email}
+            , address = #{address}
+            , pic = #{pic}
+            , updated_at = current_timestamp
+        </if>
+        <if test="pic==null">
+            phone = #{phone}
+            , email = #{email}
+            , address = #{address}
+            , updated_at = current_timestamp
+        </if>
+        </set>
+        where iprofessor = #{iprofessor}
+    </update>
+
+
+    <select id="selProfessorLecture">
+        SELECT A.lecture_str_date lectureStrDate, A.lecture_end_date lectureEndDate,
+        A.lecture_str_time lectureStrTime, A.lecture_end_time lectureEndTime,
+        A.opening_procedures openingProcedures, A.grade_limit gradeLimit,
+        B.lecture_name lectureName, B.score,
+        C.lecture_room_name lectureRoomName, C.max_capacity maxCapacity,
+        GROUP_CONCAT(D.day_week) dayWeek, E.semester, E.isemester
+        FROM lecture_applly A
+        INNER JOIN lecture_name B
+        ON A.ilecture_name = B.ilecture_name
+        INNER JOIN lecture_room C
+        ON A.ilecture_room = C.ilecture_room
+        left JOIN lecture_day_week D
+        ON A.ilecture = D.ilecture
+        INNER JOIN semester E
+        ON A.isemester = E.isemester
+        <where>
+
+            <if test="iprofessor != null">
+                A.iprofessor = #{iprofessor}
+            </if>
+
+            <if test="openingProcedures != null ">
+                AND A.opening_procedures = #{openingProcedures}
+            </if>
+
+        </where>
+
+        GROUP BY A.ilecture
+        LIMIT #{staIdx}, 10
+    </select>
+
+    <select id="selProfessorLectureALl">
+        SELECT A.lecture_str_date lectureStrDate, A.lecture_end_date lectureEndDate,
+        A.lecture_str_time lectureStrTime, A.lecture_end_time lectureEndTime,
+        A.opening_procedures openingProcedures, A.grade_limit gradeLimit,
+        B.lecture_name lectureName, B.score,
+        C.lecture_room_name lectureRoomName, C.max_capacity maxCapacity,
+        D.day_week dayWeek, E.semester
+        FROM lecture_applly A
+        INNER JOIN lecture_name B
+        ON A.ilecture_name = B.ilecture_name
+        INNER JOIN lecture_room C
+        ON A.ilecture_room = C.ilecture_room
+        INNER JOIN lecture_day_week D
+        ON A.ilecture = D.ilecture
+        INNER JOIN semester E
+        ON A.isemester = E.isemester
+        WHERE A.iprofessor = #{iprofessor} and A.opening_procedures = #{openingProcedures}
+    </select>
+
+    <select id="selProfessorLectureCount">
+        SELECT COUNT(*)
+        FROM lecture_applly
+        <where>
+
+            <if test="iprofessor != null">
+                iprofessor = #{iprofessor}
+            </if>
+
+            <if test="openingProcedures != null ">
+                AND opening_procedures = #{openingProcedures}
+            </if>
+
+        </where>
+    </select>
+
+    <select id="selProfessorMngnm">
+        SELECT A.istudent ,E.imajor , F.major_name ,B.iprofessor , E.student_num,E.nm ,C.lecture_name , E.gender
+        ,E.phone
+        ,E.created_at,E.finished_yn , D.rating
+        FROM lecture_student A
+        INNER JOIN lecture_applly B
+        ON A.ilecture = B.ilecture
+        INNER JOIN lecture_name C
+        ON B.ilecture_name = C.ilecture_name
+        INNER JOIN student_semester_score D
+        ON D.istudent = A.istudent
+        INNER JOIN student E
+        ON E.istudent = A.istudent
+        INNER JOIN major F
+        ON F.imajor = E.imajor
+
+    </select>
+
+    <update id="updPassword">
+        UPDATE professor
+        SET professor_password = #{professorPassword}
+        WHERE iprofessor = #{iprofessor} AND role = #{role}
+    </update>
+
+
+    <select id="picFilePathByProfessor">
+        SELECT pic
+        FROM professor
+        WHERE iprofessor = #{professorId}
+    </select>
+
+    <update id="updateFilePathNullByProfessor">
+        UPDATE professor
+        SET pic = NULL
+        WHERE iprofessor = #{professorId}
+    </update>
+
+    <select id="selPasswordCurrent">
+        SELECT iprofessor id, role,
+        professor_password currentProfessorPassword
+        FROM professor
+        WHERE iprofessor = #{iprofessor} AND role = #{role}
+    </select>
+
+    <select id="getProfessorById">
+        SELECT * FROM professor
+        WHERE iprofessor = #{iprofessor}
+    </select>
+
+
+</mapper>
